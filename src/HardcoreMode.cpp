@@ -1,5 +1,18 @@
 /*
  * Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+ *
+ * PATCHED 2026-08-20 (TylerConlee fork, for Hollowpeak): removed the
+ * OnPlayerResurrect override below. That hook doesn't exist in the
+ * liyunfan1223/azerothcore-wotlk Playerbot fork this server runs on --
+ * "marked 'override', but does not override" at compile time. The
+ * module's own comment on that function said "We keep this function
+ * just to prevent some exploits for reviving" -- i.e. it was already a
+ * secondary, supplementary safety net, not the primary enforcement
+ * mechanism. The actual permadeath enforcement is CanPacketReceive()
+ * further down in HardModeServerScript, which blocks resurrection-related
+ * packets (SMSG_PRE_RESURRECT, CMSG_RECLAIM_CORPSE,
+ * CMSG_SPIRIT_HEALER_ACTIVATE, etc.) directly at the network layer and
+ * doesn't depend on this hook at all -- that's untouched below.
  */
 
 #include "ScriptMgr.h"
@@ -73,17 +86,6 @@ public:
         if (getHardcoreEnabledForPlayer(killed))
         {
             ChatHandler(killed->GetSession()).PSendSysMessage("You died during a hardcore session... Skills issues.");
-            return;
-        }
-    }
-
-    void OnPlayerResurrect(Player* player, float /*restore_percent*/, bool& /*applySickness*/) override
-    { // We keep this function just to prevent some exploits for reviving
-        if (getHardcoreEnabledForPlayer(player))
-        {
-            ChatHandler(player->GetSession()).PSendSysMessage("You can't get revived. Git Gud.");
-            player->KillPlayer();
-            player->GetSession()->KickPlayer("Player died during a hardcore session.");
             return;
         }
     }
